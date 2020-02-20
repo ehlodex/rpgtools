@@ -6,7 +6,7 @@ Includes Characters, Weapons, Armour, and Game Objects.
 """
 
 # __all__ = []
-__version__ = '0.1'
+__version__ = '0.2.2020.0220'
 __author__ = 'Joshua Burkholder [ehlodex]'
 
 import random
@@ -19,29 +19,26 @@ def get_random(r1, r2=None):
 
 
 class Attribute:
-    def __init__(self, name, injury_class, remove_class, hp, mp):
+    def __init__(self, name, hp):
         self.name = name
-        self.injury_class = injury_class
-        self.remove_class = remove_class
-        self.hp = random.choice(hp)
-        self.mp = random.choice(mp)
+        self.hp = hp
 
 
 race = {
-    'h': Attribute('human', 'physical', None, (50, 55, 60), (40, 45, 50)),
-    'e': Attribute('elf', 'physical', None, (50, 55, 60), (40, 45, 50)),
-    'd': Attribute('dwarf', 'physical', None, (50, 55, 60), (40, 45, 50)),
-    'g': Attribute('gnome', 'physical', None, (50, 55, 60), (40, 45, 50)),
-    'o': Attribute('orc', 'physical', None, (60, 65, 70), (15, 20, 25, 30))
+    'h': Attribute('human', (70, 85, 140, 180, 200)),
+    'e': Attribute('elf', (70, 85, 140, 180, 200)),
+    'd': Attribute('dwarf', (70, 85, 140, 180, 200)),
+    'g': Attribute('gnome', (70, 85, 140, 180, 200)),
+    'o': Attribute('orc', (70, 85, 140, 180, 200))
 }
 
 role = {
-    'wa': Attribute('warrior', None, None, (10, 15), (0, 5)),
-    'ra': Attribute('ranger', None, None, (10, 15), (0, 5)),
-    'mo': Attribute('monk', None, None, (10, 15), (0, 5)),
-    'ne': Attribute('necromancer', None, None, (10, 15), (0, 5)),
-    'me': Attribute('mesmer', None, None, (10, 15), (0, 5)),
-    'el': Attribute('elementalist', None, None, (10, 15), (0, 5))
+    'wa': Attribute('warrior', (28, 70, 140, 210, 280)),
+    'ra': Attribute('ranger', (18, 45, 90, 135, 180)),
+    'mo': Attribute('monk', (5, 12.5, 25, 37.5, 50)),
+    'ne': Attribute('necromancer', (28, 70, 140, 210, 280)),
+    'me': Attribute('mesmer', (18, 45, 90, 135, 180)),
+    'el': Attribute('elementalist', (5, 12.5, 25, 37.5, 50))
 }
 
 gender = {
@@ -77,22 +74,19 @@ class Character:
         self.alignment = c_align
         self._holding1 = None
         self._holding2 = None
+        self._level = 1
         self.raw = Raw()
-        self.raw.damage_value = (0, 1)
-        self.raw.damage_bonus = (0, 0)
-        self.raw.damage_class = 'physical'
+        self.raw.damage_value = (0, 2)
         self.raw.hands_needed = 0
-        self.raw.hp_bonus = 0
-        self.raw.mp_bonus = 0
         self.raw.name = 'nothing'
 
     def status(self):
-        print('{} is a {} {} with {} hp and {} mp.'
-              .format(self.name, self.gender, self.race, self.hp, self.mp))
+        print('{} is a level {} {} {} with {} hp, dealing {} damage.'
+              .format(self.name, self.level, self.gender, self.race, self.hp, self.damage))
 
-        print('{} deals {} damage, wielding {} as {} primary weapon, and '
-              'holding {} as a secondary.'
-              .format(self._gender[1].capitalize(), self.damage,
+        print('{} wields {} as {} primary weapon, and '
+              'holds {} as a secondary.'
+              .format(self._gender[1].capitalize(),
                       self.weapon.name, self._gender[3], self.offhand.name))
 
     @property  # damage is outgoing
@@ -111,19 +105,22 @@ class Character:
 
     @property
     def hp(self):
-        return self._race.hp + self._role1.hp + self.weapon.hp_bonus + self.offhand.hp_bonus
+        base = 0
+        vita = 370 if self.level > 1 else 300
+        for i in range(1, self.level + 1):
+            b = int(i // 20)
+            base = base + self._role1.hp[b]
+            vita = vita + self._race.hp[b]
+        return int(base + vita)
 
     @property
-    def injury_class(self):
-        injured_by = [self._race.injury_class, self._role1.injury_class]
-        # TODO: if armour_value > threshold: injured_by.remove['physical']
-        while None in injured_by:
-            injured_by.remove(None)
-        return injured_by
+    def level(self):
+        return self._level
 
-    @property
-    def mp(self):
-        return self._race.mp + self._role1.mp + self.weapon.mp_bonus + self.offhand.mp_bonus
+    @level.setter
+    def level(self, new_level):
+        new_level = new_level if new_level < 80 else 80
+        self._level = new_level
 
     @property
     def race(self):
@@ -143,9 +140,40 @@ class Character:
     def offhand(self):
         return self.raw if self._holding2 is None else self._holding2
 
+    def kick(self, target):
+        if target == self:
+            print('{} stomps on {} own foot.'.format(self.name, self._gender[3]))
+            return False
+        try:
+            hasattr(target, 'on_kick')
+            callable(target.on_kick())
+        except AttributeError:
+            print('{} is unable to kick that!'.format(self.name))
+            return False
+        # return target.on_kick(self)
+
+    def level_up(self):
+        self.level = self.level + 1
+        print('{} has advanced to level {}!'.format(self.name, self.level))
+
+    def punch(self, target):
+        if target != self:
+            print('{} punches {} in the face.'.format(self.name, self._gender[5]))
+            return False
+        try:
+            hasattr(target, 'on_punch')
+            callable(target.on_punch())
+        except AttributeError:
+            print('{} is unable to punch that!'.format(self.name))
+            return False
+        # return target.on_punch(self)
+
+    def use(self, target):
+        pass
+
 
 # THIS SECTION USED FOR TESTING ONLY!
 if __name__ == '__main__':
-    q = Character('John Q. Public', race['h'], role['wa'], gender['m'], align['ng'])
+    q = Character('John Q. Public',
+                  race['h'], role['wa'], gender['m'], align['ng'])
     q.status()
-    print(q.injury_class)
