@@ -157,7 +157,7 @@ class Character:
         print('{} has advanced to level {}!'.format(self.name, self.level))
 
     def punch(self, target):
-        if target != self:
+        if target == self:
             print('{} punches {} in the face.'.format(self.name, self._gender[5]))
             return False
         try:
