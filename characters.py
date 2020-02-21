@@ -72,22 +72,15 @@ class Character:
         self._role2 = None
         self._gender = c_gender
         self.alignment = c_align
+        self.alive = True
         self._holding1 = None
         self._holding2 = None
+        self._injury = 0
         self._level = 1
         self.raw = Raw()
         self.raw.damage_value = (0, 2)
         self.raw.hands_needed = 0
         self.raw.name = 'nothing'
-
-    def status(self):
-        print('{} is a level {} {} {} with {} hp, dealing {} damage.'
-              .format(self.name, self.level, self.gender, self.race, self.hp, self.damage))
-
-        print('{} wields {} as {} primary weapon, and '
-              'holds {} as a secondary.'
-              .format(self._gender[1].capitalize(),
-                      self.weapon.name, self._gender[3], self.offhand.name))
 
     @property  # damage is outgoing
     def damage(self):
@@ -114,13 +107,31 @@ class Character:
         return int(base + vita)
 
     @property
+    def hp_left(self):
+        return max((self.hp - self.injury), 0)
+
+    @property
+    def injury(self):
+        return self._injury
+
+    @injury.setter
+    def injury(self, new_value):
+        self._injury = new_value
+        if self.injury >= self.hp:
+            self.alive = False
+
+    @property
     def level(self):
         return self._level
 
     @level.setter
-    def level(self, new_level):
-        new_level = new_level if new_level < 80 else 80
-        self._level = new_level
+    def level(self, new_value):
+        new_value = new_value if new_value < 80 else 80
+        self._level = new_value
+
+    @property  # _holding2
+    def offhand(self):
+        return self.raw if self._holding2 is None else self._holding2
 
     @property
     def race(self):
@@ -136,40 +147,59 @@ class Character:
     def weapon(self):
         return self.raw if self._holding1 is None else self._holding1
 
-    @property  # _holding2
-    def offhand(self):
-        return self.raw if self._holding2 is None else self._holding2
-
-    def kick(self, target):
-        if target == self:
-            print('{} stomps on {} own foot.'.format(self.name, self._gender[3]))
-            return False
+    def attack(self, other):
+        if other == self:
+            return None
         try:
-            hasattr(target, 'on_kick')
-            callable(target.on_kick())
+            return other.on_attack(self)
         except AttributeError:
-            print('{} is unable to kick that!'.format(self.name))
-            return False
-        # return target.on_kick(self)
+            pass
+        return False
+
+    def interact(self, other):
+        if other == self:
+            return None
+        try:
+            return other.on_interact(self)
+        except AttributeError:
+            pass
+        return False
+
+    def kick(self, other):
+        if other == self:
+            return None
+        try:
+            return other.on_kick(self)
+        except AttributeError:
+            pass
+        return False
 
     def level_up(self):
         self.level = self.level + 1
         print('{} has advanced to level {}!'.format(self.name, self.level))
 
-    def punch(self, target):
-        if target == self:
-            print('{} punches {} in the face.'.format(self.name, self._gender[5]))
-            return False
-        try:
-            hasattr(target, 'on_punch')
-            callable(target.on_punch())
-        except AttributeError:
-            print('{} is unable to punch that!'.format(self.name))
-            return False
-        # return target.on_punch(self)
+    def on_attack(self, other):
+        injury = other.damage
+        self.injury = self.injury + injury
+        return injury
 
-    def use(self, target):
-        pass
+    def punch(self, other):
+        if other == self:
+            return None
+        try:
+            return other.on_punch(self)
+        except AttributeError:
+            pass
+        return False
+
+    def status(self):
+        print('{} is a level {} {} {} with {} hp, dealing {} damage.'
+              .format(self.name, self.level, self.gender, self.race, self.hp, self.damage))
+
+        print('{} wields {} as {} primary weapon, and '
+              'holds {} as a secondary.'
+              .format(self._gender[1].capitalize(),
+                      self.weapon.name, self._gender[3], self.offhand.name))
 
 
 # THIS SECTION USED FOR TESTING ONLY!
