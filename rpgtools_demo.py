@@ -22,14 +22,12 @@ while enemy.hp_left > 0 and hero.hp_left > 0:
     action = action.lower()[0]
     if action == 'a':
         damage = hero.attack(enemy)
-        if damage is None:
-            print('You attack yourself! What foolishness!')
-        elif int(damage):
+        if damage:
             print('You inflict {} damage! '.format(damage), end='')
         elif not damage:
             print('You cannot attack that!')
         else:
-            print('ERROR: Damage is not None, True, False, or a number')
+            print('ERROR: Damage was not returned correctly!')
 
         if enemy.alive:
             time.sleep(1)
@@ -47,15 +45,22 @@ while enemy.hp_left > 0 and hero.hp_left > 0:
         else:
             print('{} bravely runs away! (-0)'.format(hero.name))
         break
+
     elif action == 'i':
         interact = hero.interact(enemy)
+        if interact:
+            pass
+        else:
+            print('You cannot interact with that.')
 
     print('{:<15}: {:>4} / {:>4}'.format(hero.name, hero.hp_left, hero.hp))
     print('{:<15}: {:>4} / {:>4}'.format(enemy.name, enemy.hp_left, enemy.hp))
 
-if hero.alive:
+if hero.alive and not enemy.alive:
     print('You are victorious!')
-elif enemy.alive:
+elif not hero.alive:
     print('You are dead.')
+elif hero.alive and enemy.alive:
+    print('Brave {} turned about, and gallantly {} chickened out!'.format(hero.name, hero._gender[1]))
 else:
-    print('ERROR: Something went wrong!')
+    print("Hmm... that wasn't supposed to happen...")
