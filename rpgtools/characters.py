@@ -6,7 +6,7 @@ Includes Characters, Weapons, Armour, and Game Objects.
 """
 
 # __all__ = []
-__version__ = '0.2.2020.0220'
+__version__ = '0.003.20.02'
 __author__ = 'Joshua Burkholder [ehlodex]'
 
 import random
@@ -176,7 +176,7 @@ class Character:
 
     def level_up(self):
         self.level = self.level + 1
-        print('{} has advanced to level {}!'.format(self.name, self.level))
+        return self.level
 
     def on_attack(self, other):
         injury = other.damage
@@ -200,10 +200,3 @@ class Character:
               'holds {} as a secondary.'
               .format(self._gender[1].capitalize(),
                       self.weapon.name, self._gender[3], self.offhand.name))
-
-
-# THIS SECTION USED FOR TESTING ONLY!
-if __name__ == '__main__':
-    q = Character('John Q. Public',
-                  race['h'], role['wa'], gender['m'], align['ng'])
-    q.status()
